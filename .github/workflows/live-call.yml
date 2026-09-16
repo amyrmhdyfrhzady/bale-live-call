@@ -1,0 +1,44 @@
+name: Bale Live Call
+
+on:
+  workflow_dispatch:
+
+jobs:
+  live-call:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Build
+        run: |
+          go mod download
+          go build -trimpath -ldflags="-s -w" \
+            -o bale-live-call \
+            ./cmd/bale-live-call
+
+      - name: Start Bale Live Call
+        env:
+          BALE_COOKIES: ${{ secrets.BALE_COOKIES }}
+          STREAM_URL: ${{ secrets.STREAM_URL }}
+          VIDEO_WIDTH: 1280
+          VIDEO_HEIGHT: 720
+          VIDEO_FPS: 24
+          VIDEO_BITRATE: 1400k
+          AUDIO_BITRATE: 64k
+        run: |
+          ./bale-live-call \
+            --cookie-string "$BALE_COOKIES" \
+            --stream-url "$STREAM_URL"
